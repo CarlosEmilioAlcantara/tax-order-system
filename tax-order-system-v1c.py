@@ -117,6 +117,8 @@ frmTitleLabelBottom.pack(pady = (0, 3))
 # Initialize the titlebar
 frmTitleBar.pack(anchor=tk.N, fill=tk.X)
 
+buttons = ["LN: 12345"]
+
 # Window drag functions
 def getPos(e):
     xWin = app.winfo_x()
@@ -160,13 +162,6 @@ def pnRecords():
     frmPopupTitleBar = tk.Frame(top, bg = BLACK)
 
     # Popup titlebar
-    def minWindow():
-        top.attributes("-alpha", 0)
-
-    def unminWindow(e):
-        top.focus
-        top.attributes("-alpha", 1)
-
     btnClose = tk.Button(
         frmPopupTitleBar,
         text = "×",
@@ -177,20 +172,9 @@ def pnRecords():
         command = lambda: top.destroy())
     btnClose.pack(side = tk.RIGHT, pady = (3, 0))
 
-    btnMinimize = tk.Button(
-        frmPopupTitleBar,
-        text = "–",
-        bd = 0,
-        bg = BLACK,
-        fg = YELLOW,
-        font = ("Helvetica Black", 16),
-        command = minWindow)
-    btnMinimize.pack(side = tk.RIGHT)
-
     # Window title
     ## Window title icon
     frmWindowIcon = tk.Frame(frmPopupTitleBar)
-    icnTitle = tk.PhotoImage(file = "./icons/header-icon.png").subsample(2, 2)
     lblIcon = tk.Label(frmWindowIcon, image = icnTitle, bg = BLACK)
     lblIcon.pack()
     frmWindowIcon.pack(side = "left")
@@ -242,13 +226,12 @@ def pnRecords():
     btnClose.bind("<Enter>", lambda e: btnClose.config(fg = DARKRED))
     btnClose.bind("<Leave>", lambda e: btnClose.config(fg = RED))
 
-    btnMinimize.bind("<Enter>", lambda e: btnMinimize.config(fg = DARKYELLOW))
-    btnMinimize.bind("<Leave>", lambda e: btnMinimize.config(fg = YELLOW))
-
     frmCreateRecord = tk.Frame(top, bg = WHITE)
     frmCreateRecordLeft = tk.Frame(frmCreateRecord, bg = WHITE)
 
-    frmSurname = tk.Frame(frmCreateRecordLeft, bg = WHITE)
+    top.bind("<FocusIn>", unminWindow)
+    top.after(1, lambda: setAppWindow(top))
+
     # Record entries left
     lblSurname = tk.Label(
         frmCreateRecordLeft,
@@ -311,8 +294,19 @@ def pnRecords():
     entMiddlename.pack(ipady = 5)
 
     def test():
-        lblTest = tk.Label(frmCreateRecordRight, text = entSurname.get())
-        lblTest.pack()
+        buttons.append(entSurname.get())
+
+        # Kunin number ng pinakabago tapos display
+        for button in buttons:
+            name = "btn" + button
+            name = tk.Button(
+                frmSidebar, 
+                bd = 0,
+                text = name, 
+                bg = WHITE,
+                font = ("Helvetica", 10),
+                )
+            name.pack(side = tk.TOP, padx = 24, pady = 24)
 
     frmCreateRecordRight = tk.Frame(frmCreateRecord, bg = WHITE)
 
@@ -391,8 +385,8 @@ def pnRecords():
         command = test)
     btnCreate.pack(side = tk.RIGHT, pady = (10, 0))
 
-    frmCreateRecordLeft.pack(anchor = tk.CENTER, side = tk.LEFT, padx = (90, 0), pady = (0, 200))
-    frmCreateRecordRight.pack(anchor = tk.CENTER, side = tk.RIGHT, padx = (0, 90), pady = (0, 163))
+    frmCreateRecordLeft.pack(anchor = tk.CENTER, side = tk.LEFT, padx = (30, 10), pady = (0, 36))
+    frmCreateRecordRight.pack(anchor = tk.CENTER, side = tk.RIGHT, padx = (0, 30), pady = (20, 20))
     frmCreateRecord.pack(anchor = tk.W, fill = tk.BOTH, expand = True, side = tk.LEFT)
     # frmCreateRecord.pack_propagate(False)
 
@@ -414,6 +408,17 @@ btnAdd = tk.Button(
     height = 30,
     command = pnRecords)
 btnAdd.pack(side = tk.TOP, padx = 24, pady = 24)
+
+for button in buttons:
+    name = "btn" + button
+    name = tk.Button(
+        frmSidebar, 
+        bd = 0,
+        text = name, 
+        bg = WHITE,
+        font = ("Helvetica", 10),
+        )
+    name.pack(side = tk.TOP, padx = 24, pady = 24)
 
 frmSidebar.pack(anchor = tk.W, fill = tk.Y, side = tk.LEFT)
 # frmSidebar.pack_propagate(False)
