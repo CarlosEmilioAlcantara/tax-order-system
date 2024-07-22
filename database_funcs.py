@@ -10,7 +10,6 @@ def initialize_database():
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS professionals(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 license_no TEXT,
                 last_name TEXT,
                 first_name TEXT,
@@ -24,6 +23,53 @@ def initialize_database():
         conn.close()
     except sqlite3.Error as e:
         print(f"Error occurred: {e}")
+
+def get_table_name(cursor, license_no):
+    cursor.execute("""
+        SELECT last_name 
+        FROM professionals 
+        WHERE license_no = ?
+    """, (license_no,))
+    info = cursor.fetchall()
+    last_name = info[0][0]
+    table_name = license_no + "_" + last_name
+
+    return table_name
+
+def check_license_no(license_no):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+
+    cursor.execute(f"""
+        SELECT license_no 
+        FROM professionals 
+        WHERE license_no 
+            = '{license_no}'
+    """
+    )
+
+    checking = cursor.fetchone()
+    conn.close()
+
+    return checking
+
+def check_receipt_no(license_no, receipt_no):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    table_name = get_table_name(cursor, license_no)
+
+    cursor.execute(f"""
+        SELECT receipt_no
+        FROM '{table_name}' 
+        WHERE receipt_no 
+            = '{receipt_no}'
+    """
+    )
+
+    checking = cursor.fetchone()
+    conn.close()
+
+    return checking
 
 def get_license_numbers():
     conn = sqlite3.connect(DATABASE_FILE)
@@ -59,27 +105,24 @@ def add_record(license_no, last_name, first_name, middle_name, address,
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
 
+
     cursor.execute("""
         INSERT INTO professionals (license_no, last_name, first_name, middle_name, address, profession)
         VALUES (?, ?, ?, ?, ?, ?)
     """, (license_no, last_name, first_name, middle_name, address, profession))
 
-    cursor.execute("""
-        SELECT id FROM professionals WHERE license_no = ?
-    """, (license_no,))
-    id = cursor.fetchall()
-    id = id[0][0]
-    table_name = str(id) + "_" + last_name
+    conn.commit()
+    table_name = get_table_name(cursor, license_no)
 
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS '{table_name}' (
-            record_id INTEGER PRIMARY KEY AUTOINCREMENT,
             license_no TEXT,
             receipt_no TEXT,
             type_of_payment TEXT,
             receipt_date TEXT,
             amount TEXT,
-            penalty TEXT DEFAULT 'None' NOT NULL
+            penalty TEXT DEFAULT 'None' NOT NULL,
+            total_amount TEXT
         )
     """)
 
@@ -91,7 +134,7 @@ def open_record(license_no):
     cursor = conn.cursor()
 
     cursor.execute(f"""
-        SELECT * FROM professionals WHERE license_no = {license_no}
+        SELECT * FROM professionals WHERE license_no = '{license_no}'
     """)
 
     record = cursor.fetchall()
@@ -132,17 +175,10 @@ def edit_record(license_no, last_name, first_name, middle_name, address,
 def delete_record(license_no):
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, last_name FROM professionals WHERE license_no = ?
-    """, (license_no,))
-    info = cursor.fetchall()
-    id = info[0][0]
-    last_name = info[0][1]
-    table_name = str(id) + "_" + last_name
+    table_name = get_table_name(cursor, license_no)
 
     cursor.execute(f"DROP TABLE IF EXISTS '{table_name}'")
-    cursor.execute(f"DELETE FROM professionals WHERE id = '{id}'")
+    cursor.execute(f"DELETE FROM professionals WHERE license_no = '{license_no}'")
 
     conn.commit()
     conn.close()
@@ -150,19 +186,13 @@ def delete_record(license_no):
 def get_receipts(license_no):
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, last_name FROM professionals WHERE license_no = ?
-    """, (license_no,))
-    info = cursor.fetchall()
-    id = info[0][0]
-    last_name = info[0][1]
-    table_name = str(id) + "_" + last_name
+    table_name = get_table_name(cursor, license_no)
 
     cursor.execute(f"""
         SELECT 
-            license_no, receipt_no, type_of_payment, 
-            receipt_date, amount, penalty
+            receipt_no, type_of_payment, 
+            receipt_date, amount, penalty,
+            total_amount
         FROM '{table_name}'
     """
     )
@@ -172,75 +202,141 @@ def get_receipts(license_no):
 
     return receipts
 
-def add_receipt(license_no, receipt_no, type_of_payment, receipt_date, amount):
-    conn = sqlite3.connect(DATABASE_FILE)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, last_name FROM professionals WHERE license_no = ?
-    """, (license_no,))
-    info = cursor.fetchall()
-    id = info[0][0]
-    last_name = info[0][1]
-    table_name = str(id) + "_" + last_name
-
-    year = datetime.now().strftime("%y")
-    date1 = datetime.strptime(receipt_date, "%m/%d/%y")
-    date2 = datetime.strptime(f"01/31/{year}", "%m/%d/%y")
-
-    if date1 > date2:
-        amount = float(amount)
-        penalty = amount * 0.30 
-        print(penalty)
-
-    # # Check gamit if statement kung meron na new sa penalty column 
-    # cursor.execute(f"""
-    #     SELECT EXISTS(SELECT 'New' FROM '{table_name}')
-    # """)
-    # new = cursor.fetchall()
-
-    # if new:
-    #     cursor.execute(f"""
-    #         INSERT INTO '{table_name}' (
-    #             license_no, receipt_no, type_of_payment, receipt_date, 
-    #             amount
-    #         )
-    #         VALUES (
-    #             '{license_no}', '{receipt_no}', '{type_of_payment}',
-    #             '{receipt_date}', '{amount}'
-    #         )
-    #     """)
-    # else:
-    #     penalty = "test"
-    #     cursor.execute(f"""
-    #         INSERT INTO '{table_name}' (
-    #             license_no, receipt_no, type_of_payment, receipt_date, 
-    #             amount, penalty
-    #         )
-    #         VALUES (
-    #             '{license_no}', '{receipt_no}', '{type_of_payment}',
-    #             '{receipt_date}', '{amount}', '{penalty}'
-    #         )
-    #     """)
-
-    # conn.commit()
-    conn.close()
-
 def detect_newness(license_no):
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, last_name FROM professionals WHERE license_no = ?
-    """, (license_no,))
-    info = cursor.fetchall()
-    id = info[0][0]
-    last_name = info[0][1]
-    table_name = str(id) + "_" + last_name
+    table_name = get_table_name(cursor, license_no)
 
     # Check gamit if statement kung meron na new sa penalty column 
     cursor.execute(f"SELECT count(*) FROM '{table_name}'")
 
     count = cursor.fetchall()[0][0]
+    conn.close()
 
     return count
+
+def add_receipt(license_no, receipt_no, type_of_payment, receipt_date, amount):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    table_name = get_table_name(cursor, license_no)
+
+    year = datetime.now().strftime("%y")
+    date1 = datetime.strptime(receipt_date, "%m/%d/%y")
+    date2 = datetime.strptime(f"01/31/{year}", "%m/%d/%y")
+
+    checking = detect_newness(license_no)
+    amount = float(amount)
+    penalty = "None"
+    total_amount = float(amount)
+
+    if checking:
+        if date1 > date2:
+            penalty = amount * 0.30 
+            total_amount = amount + penalty
+
+        cursor.execute(f"""
+            INSERT INTO '{table_name}' (
+                license_no, receipt_no, type_of_payment, receipt_date, 
+                amount, penalty, total_amount
+            )
+            VALUES (
+                '{license_no}', '{receipt_no}', '{type_of_payment}',
+                '{receipt_date}', '{"Php " + str(f"{amount:.2f}")}', 
+                '{"Php " + str(f"{penalty:.2f}")}', 
+                '{"Php " + str(f"{total_amount:.2f}")}'
+            )
+        """)
+    else:
+        cursor.execute(f"""
+            INSERT INTO '{table_name}' (
+                license_no, receipt_no, type_of_payment, receipt_date, 
+                amount, penalty, total_amount
+            )
+            VALUES (
+                '{license_no}', '{receipt_no}', '{type_of_payment}',
+                '{receipt_date}', '{"Php " + str(f"{amount:.2f}")}', 
+                '{penalty}', '{"Php " + str(f"{total_amount:.2f}")}'
+            )
+        """)
+
+    conn.commit()
+    conn.close()
+
+def delete_receipt(license_no, receipt_no):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    table_name = get_table_name(cursor, license_no)
+
+    cursor.execute(f"DELETE FROM '{table_name}' WHERE receipt_no = '{receipt_no}'")
+
+    conn.commit()
+    conn.close()
+
+def edit_receipt(license_no, old_receipt_no, new_receipt_no, type_of_payment, 
+                 receipt_date, amount):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    table_name = get_table_name(cursor, license_no)
+
+    year = datetime.now().strftime("%y")
+    date1 = datetime.strptime(receipt_date, "%m/%d/%y")
+    date2 = datetime.strptime(f"01/31/{year}", "%m/%d/%y")
+
+    checking = detect_newness(license_no)
+    penalty = "None"
+    total_amount = float(amount)
+
+    if checking:
+        if date1 > date2:
+            amount = float(amount)
+            penalty = amount * 0.30 
+            total_amount = amount + penalty
+
+        cursor.execute(f"""
+            UPDATE '{table_name}' 
+            SET receipt_no = '{new_receipt_no}',
+                type_of_payment = '{type_of_payment}', 
+                receipt_date = '{receipt_date}', 
+                amount = '{"Php " + str(f"{amount:.2f}")}',
+                penalty = '{"Php " + str(f"{penalty:.2f}")}', 
+                total_amount = '{"Php " + str(f"{total_amount:.2f}")}'
+            WHERE receipt_no = '{old_receipt_no}'
+        """)
+    else:
+        cursor.execute(f"""
+            UPDATE '{table_name}' 
+            SET receipt_no = '{new_receipt_no}',
+                type_of_payment = '{type_of_payment}', 
+                receipt_date = '{receipt_date}', 
+                amount = '{"Php " + str(f"{amount:.2f}")}',
+                penalty = '{penalty}', 
+                total_amount = '{"Php " + str(f"{total_amount:.2f}")}'
+            WHERE receipt_no = '{old_receipt_no}'
+        """)
+
+    conn.commit()
+    conn.close()
+
+def search_receipts(license_no, search_term):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    table_name = get_table_name(cursor, license_no)
+
+    cursor.execute(f"""
+        SELECT receipt_no, type_of_payment, receipt_date, amount, penalty, total_amount 
+        FROM '{table_name}' 
+        WHERE 
+            receipt_no LIKE '%{search_term}%' OR
+            type_of_payment LIKE '%{search_term}%' OR
+            receipt_date LIKE '%{search_term}%' OR
+            amount LIKE '%{search_term}%' OR
+            penalty LIKE '%{search_term}%'
+            total_amount LIKE '%{search_term}%'
+    """
+    )
+
+    results = cursor.fetchall()
+    print(results)
+    conn.close()
+
+    return results
