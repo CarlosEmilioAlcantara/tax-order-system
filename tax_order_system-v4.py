@@ -3,17 +3,21 @@ from tkinter import messagebox
 from datetime import date, datetime
 from tkcalendar import Calendar
 import tkinter.ttk as ttk
-# from ttkbootstrap.constants import *
+
+import sys
+import os
+sys.path.append(os.path.join(sys.path[0]))
+
 from database_funcs import initialize_database, get_license_numbers, \
                             search_license_numbers, add_record, open_record, \
                             edit_record, delete_record, get_receipts, \
                             add_receipt, detect_newness, delete_receipt, \
                             check_license_no, check_receipt_no, edit_receipt, \
-                            search_receipts
+                            search_receipts, ready_receipt, ready_professional
 
-GREY = "#4e5d6c"
+from print_receipt import print_receipt
+
 DARKGREY = "#212529"
-BG = "#ffffff"
 BLUE = "#4c9be8"
 RED = "#d9534f"
 GREEN = "#5cb85c"
@@ -164,6 +168,10 @@ class Sidebar(tk.Frame):
         self.master.mainwindow.ent_profession.insert(0, record[0][5])
         self.master.mainwindow.lbl_license_no.config(text=record[0][0])
 
+        self.master.mainwindow.ent_receipt_no.delete(0, "end")
+        self.master.mainwindow.ent_amount.delete(0, "end")
+        self.master.mainwindow.ent_verified.delete(0, "end")
+
         self.master.mainwindow.load_receipts(license_no)
         self.master.mainwindow.handle_detect_newness(license_no)
 
@@ -189,11 +197,6 @@ class MainWindow(tk.Frame):
         self.create_treeview(self.frm_top)
 
         self.frm_top.pack(side="top")
-
-    # def mainwindow_bottom(self, container):
-    #     self.frm_bottom = tk.Frame(container)
-    #     self.create_treeview(self.frm_bottom)
-    #     self.frm_bottom.pack(side="bottom", pady=(0, 30))
 
     def create_professional(self, container):
         self.frm_professional = tk.LabelFrame(container, text="Professional Records")
@@ -329,10 +332,6 @@ class MainWindow(tk.Frame):
         self.frm_receipt_middle = tk.Frame(self.frm_receipt)
         self.frm_receipt_right = tk.Frame(self.frm_receipt)
 
-        # lbl_date = tk.Label(self.frm_receipt_left, text="Date:",
-        #                     fg=WHITE)
-        # lbl_date.pack(anchor="w")
-
         today = datetime.now()
         self.cal_date = Calendar(self.frm_receipt_left, selectmode="day",
                                  year=int(today.strftime("%Y")),
@@ -364,6 +363,12 @@ class MainWindow(tk.Frame):
                                    validatecommand=(self.validation, '%S'),
                                    width=30)
         self.ent_amount.pack(anchor="w", ipady=3, pady=(0, 5))
+
+        lbl_verified = tk.Label(self.frm_receipt_middle, text="Verified by:")
+        lbl_verified.pack(anchor="w")
+
+        self.ent_verified = tk.Entry(self.frm_receipt_middle, width=30)
+        self.ent_verified.pack(anchor="w", ipady=3, pady=(0, 5))
 
         lbl_type_of_payment = tk.Label(self.frm_receipt_middle, 
                                        text="Type of Payment")
@@ -428,10 +433,11 @@ class MainWindow(tk.Frame):
         type_of_payment = self.payment.get()
         receipt_date = self.cal_date.get_date()        
         amount = self.ent_amount.get()
+        verified_by = self.ent_verified.get()
 
         if (len(license_no) == 0 or len(receipt_no) == 0 or 
             type_of_payment == "None" or len(receipt_date) == 0 or
-            len(amount) == 0):
+            len(amount) == 0 or len(verified_by) == 0):
 
             messagebox.showerror(
                 "Receipt Addition Error", 
@@ -445,7 +451,7 @@ class MainWindow(tk.Frame):
         else: 
             if not check_receipt_no(license_no, receipt_no):
                 add_receipt(license_no, receipt_no, type_of_payment, receipt_date, 
-                            amount)
+                            amount, verified_by)
 
                 messagebox.showinfo("Record Addition Successful", 
                                     "Done! Receipt has been added.")
@@ -462,6 +468,7 @@ class MainWindow(tk.Frame):
         license_no = self.lbl_license_no.cget("text")    
         selected = self.trv_receipt.selection()
         to_delete = [] 
+        answer = False
 
         if not selected:
             messagebox.showerror("Receipt Deletion Error",
@@ -479,7 +486,7 @@ class MainWindow(tk.Frame):
                 delete_receipt(license_no, receipt_no)
 
             messagebox.showinfo("Receipt Record Deletion Successful",
-                                "Done! Rececipt record has been deleted.")
+                                "Done! Receipt record has been deleted.")
                 
             self.handle_detect_newness(license_no)
             self.load_receipts(license_no)
@@ -491,6 +498,7 @@ class MainWindow(tk.Frame):
         type_of_payment = self.payment.get()
         receipt_date = self.cal_date.get_date()        
         amount = self.ent_amount.get()
+        verified_by = self.ent_verified.get()
         answer = False
 
         if not selected:
@@ -501,7 +509,7 @@ class MainWindow(tk.Frame):
                                 "Error! Please only pick one record.")
         elif (len(license_no) == 0 or len(new_receipt_no) == 0 or 
               type_of_payment == "None" or len(receipt_date) == 0 or
-              len(amount) == 0):
+              len(amount) == 0 or len(verified_by) == 0):
 
             messagebox.showerror(
                 "Receipt Editing Error", 
@@ -517,11 +525,12 @@ class MainWindow(tk.Frame):
                 old_receipt_no = self.trv_receipt.item(selected, "values")[0]
 
                 edit_receipt(license_no, old_receipt_no, new_receipt_no, 
-                            type_of_payment, receipt_date, amount)
+                            type_of_payment, receipt_date, amount, verified_by)
 
                 messagebox.showinfo("Receipt Editing Successful",
-                                    "Done! Rececipt record has been edited.")
+                                    "Done! Receipt record has been edited.")
 
+                self.handle_detect_newness(license_no)
                 self.load_receipts(license_no)
             else:
                 messagebox.showerror(
@@ -543,7 +552,6 @@ class MainWindow(tk.Frame):
 
     def create_treeview(self, container):
         self.sty_treeview = ttk.Style()
-        # self.sty_treeview.theme_use('default')
 
         self.sty_treeview.configure("Treeview", background=WHITE,
                                     foreground=BLACK, rowheight=25,
@@ -564,7 +572,7 @@ class MainWindow(tk.Frame):
         self.trv_receipt = ttk.Treeview(self.frm_treeview,
                                        columns=("receipt_no", "type_of_payment",
                                                 "date", "amount", "penalty",
-                                                "total_amount"),
+                                                "total_amount", "verified_by"),
                                        xscrollcommand=self.scrl_treeview_x,
                                        yscrollcommand=self.scrl_treeview_y,
                                        selectmode="extended")
@@ -599,6 +607,10 @@ class MainWindow(tk.Frame):
         self.trv_receipt.heading("total_amount", text="Total Amount")
         self.trv_receipt.column("total_amount", width=150,
                                anchor="center", stretch=tk.YES)
+
+        self.trv_receipt.heading("verified_by", text="Verified By")
+        self.trv_receipt.column("verified_by", width=150,
+                               anchor="center", stretch=tk.YES)
             
         self.trv_receipt.tag_configure("oddrow", background=BLUE, 
                                        foreground=WHITE)
@@ -607,6 +619,37 @@ class MainWindow(tk.Frame):
 
         self.trv_receipt.pack()
 
+    def create_print(self, container):
+        self.btn_print = tk.Button(container,
+                                   text="Print Receipt",
+                                   background=GREEN,
+                                   activebackground=GREEN,
+                                   foreground=WHITE,
+                                   activeforeground=WHITE,
+                                   command=self.handle_print_receipt)
+        self.btn_print.pack(anchor="w", side="top", pady=2)
+
+    def handle_print_receipt(self):
+        license_no = self.lbl_license_no.cget("text")
+        selected = self.trv_receipt.selection()
+        to_print = []
+
+        if not selected:
+            messagebox.showerror("Receipt Printing Error",
+                                "Error! Please pick record/s to print first.")
+        else:
+            for selection in selected:
+                to_print.append(self.trv_receipt.item(selection, "values")[0])
+
+            for receipt_no in to_print:
+                professional_record = ready_professional(license_no)
+                receipt_record = ready_receipt(license_no, receipt_no)
+
+                print_receipt(professional_record, receipt_record)
+
+            messagebox.showinfo("Receipt Printing Successful",
+                                "Done! Receipt record/s printed to pdf.")
+
     def create_search(self, container):
         self.lbl_search = tk.Label(container, text="Search in the professional's " + 
                                    "receipt records:") 
@@ -614,6 +657,7 @@ class MainWindow(tk.Frame):
 
         self.ent_search = tk.Entry(container)
         self.ent_search.pack(anchor="w", fill="x")
+        self.create_print(container)
 
         self.ent_search.bind("<KeyRelease>", self.handle_search_receipt)
 
@@ -624,19 +668,20 @@ class MainWindow(tk.Frame):
                 self.trv_receipt.insert("", "end", text="", 
                                         values=(result[0], result[1],
                                                 result[2], result[3],
-                                                result[4], result[5]),
+                                                result[4], result[5],
+                                                result[6]),
                                         iid=i, tags=("evenrow",))
             else:
                 self.trv_receipt.insert("", "end", text="",
                                         values=(result[0], result[1],
                                                 result[2], result[3],
-                                                result[4], result[5]),
+                                                result[4], result[5],
+                                                result[6]),
                                         iid=i, tags=("oddrow",))
 
     def handle_search_receipt(self, e):
         license_no = self.lbl_license_no.cget("text")    
         search_term = self.ent_search.get() 
-        print(search_term)
 
         results = search_receipts(license_no, search_term)
         self.display_search_receipt(results)
@@ -644,7 +689,7 @@ class MainWindow(tk.Frame):
     def handle_detect_newness(self, license_no):
         count = detect_newness(license_no)
 
-        if (count == 0):
+        if not count:
             self.payment.set("New")
             self.rdb_new.config(state="normal")
             self.rdb_renew.config(state="disabled")
@@ -703,8 +748,7 @@ class AddRecordWindow(tk.Toplevel):
         self.ent_profession = tk.Entry(self.frm_add_right, width=30)
         self.ent_profession.pack(anchor="w", ipady=3)
 
-        lbl_license = tk.Label(self.frm_add_right, text="License No:",
-                               fg=WHITE)
+        lbl_license = tk.Label(self.frm_add_right, text="License No:")
         lbl_license.pack(anchor="w")
 
         self.ent_license = tk.Entry(self.frm_add_right, width=30)

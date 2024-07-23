@@ -105,7 +105,6 @@ def add_record(license_no, last_name, first_name, middle_name, address,
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
 
-
     cursor.execute("""
         INSERT INTO professionals (license_no, last_name, first_name, middle_name, address, profession)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -122,7 +121,8 @@ def add_record(license_no, last_name, first_name, middle_name, address,
             receipt_date TEXT,
             amount TEXT,
             penalty TEXT DEFAULT 'None' NOT NULL,
-            total_amount TEXT
+            total_amount TEXT,
+            verified_by TEXT
         )
     """)
 
@@ -154,17 +154,6 @@ def edit_record(license_no, last_name, first_name, middle_name, address,
         WHERE license_no = ?
     """, (last_name, first_name, middle_name, address, profession, license_no))
 
-    # cursor.execute(f"""
-    #     UPDATE professionals 
-    #     SET 
-    #         last_name = {last_name}, 
-    #         first_name = {first_name},
-    #         middle_name = {middle_name},
-    #         address = {address},
-    #         profession = {profession}
-    #     WHERE
-    #         license_no = {license_no}
-    # """)
     record = cursor.fetchall()
 
     conn.commit()
@@ -192,7 +181,7 @@ def get_receipts(license_no):
         SELECT 
             receipt_no, type_of_payment, 
             receipt_date, amount, penalty,
-            total_amount
+            total_amount, verified_by
         FROM '{table_name}'
     """
     )
@@ -207,15 +196,18 @@ def detect_newness(license_no):
     cursor = conn.cursor()
     table_name = get_table_name(cursor, license_no)
 
-    # Check gamit if statement kung meron na new sa penalty column 
-    cursor.execute(f"SELECT count(*) FROM '{table_name}'")
+    cursor.execute(f"""SELECT type_of_payment 
+                   FROM '{table_name}'
+                   WHERE type_of_payment = 'New'""")
 
-    count = cursor.fetchall()[0][0]
+    count = cursor.fetchone()
     conn.close()
 
     return count
 
-def add_receipt(license_no, receipt_no, type_of_payment, receipt_date, amount):
+def add_receipt(license_no, receipt_no, type_of_payment, receipt_date, amount,
+                verified_by):
+
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     table_name = get_table_name(cursor, license_no)
@@ -237,25 +229,26 @@ def add_receipt(license_no, receipt_no, type_of_payment, receipt_date, amount):
         cursor.execute(f"""
             INSERT INTO '{table_name}' (
                 license_no, receipt_no, type_of_payment, receipt_date, 
-                amount, penalty, total_amount
+                amount, penalty, total_amount, verified_by
             )
             VALUES (
                 '{license_no}', '{receipt_no}', '{type_of_payment}',
                 '{receipt_date}', '{"Php " + str(f"{amount:.2f}")}', 
                 '{"Php " + str(f"{penalty:.2f}")}', 
-                '{"Php " + str(f"{total_amount:.2f}")}'
+                '{"Php " + str(f"{total_amount:.2f}")}', '{verified_by}'
             )
         """)
     else:
         cursor.execute(f"""
             INSERT INTO '{table_name}' (
                 license_no, receipt_no, type_of_payment, receipt_date, 
-                amount, penalty, total_amount
+                amount, penalty, total_amount, verified_by
             )
             VALUES (
                 '{license_no}', '{receipt_no}', '{type_of_payment}',
                 '{receipt_date}', '{"Php " + str(f"{amount:.2f}")}', 
-                '{penalty}', '{"Php " + str(f"{total_amount:.2f}")}'
+                '{penalty}', '{"Php " + str(f"{total_amount:.2f}")}',
+                '{verified_by}'
             )
         """)
 
@@ -273,7 +266,7 @@ def delete_receipt(license_no, receipt_no):
     conn.close()
 
 def edit_receipt(license_no, old_receipt_no, new_receipt_no, type_of_payment, 
-                 receipt_date, amount):
+                 receipt_date, amount, verified_by):
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
     table_name = get_table_name(cursor, license_no)
@@ -299,7 +292,8 @@ def edit_receipt(license_no, old_receipt_no, new_receipt_no, type_of_payment,
                 receipt_date = '{receipt_date}', 
                 amount = '{"Php " + str(f"{amount:.2f}")}',
                 penalty = '{"Php " + str(f"{penalty:.2f}")}', 
-                total_amount = '{"Php " + str(f"{total_amount:.2f}")}'
+                total_amount = '{"Php " + str(f"{total_amount:.2f}")}',
+                verified_by = '{verified_by}'
             WHERE receipt_no = '{old_receipt_no}'
         """)
     else:
@@ -310,7 +304,8 @@ def edit_receipt(license_no, old_receipt_no, new_receipt_no, type_of_payment,
                 receipt_date = '{receipt_date}', 
                 amount = '{"Php " + str(f"{amount:.2f}")}',
                 penalty = '{penalty}', 
-                total_amount = '{"Php " + str(f"{total_amount:.2f}")}'
+                total_amount = '{"Php " + str(f"{total_amount:.2f}")}',
+                verified_by = '{verified_by}'
             WHERE receipt_no = '{old_receipt_no}'
         """)
 
@@ -323,20 +318,56 @@ def search_receipts(license_no, search_term):
     table_name = get_table_name(cursor, license_no)
 
     cursor.execute(f"""
-        SELECT receipt_no, type_of_payment, receipt_date, amount, penalty, total_amount 
+        SELECT receipt_no, type_of_payment, receipt_date, amount, penalty, 
+               total_amount, verified_by
         FROM '{table_name}' 
         WHERE 
             receipt_no LIKE '%{search_term}%' OR
             type_of_payment LIKE '%{search_term}%' OR
             receipt_date LIKE '%{search_term}%' OR
             amount LIKE '%{search_term}%' OR
-            penalty LIKE '%{search_term}%'
-            total_amount LIKE '%{search_term}%'
+            penalty LIKE '%{search_term}%' OR
+            total_amount LIKE '%{search_term}%' OR
+            verified_by LIKE '%{search_term}%'
     """
     )
 
     results = cursor.fetchall()
-    print(results)
     conn.close()
 
     return results
+
+def ready_professional(license_no):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+
+    cursor.execute(f"""
+        SELECT * 
+        FROM professionals 
+        WHERE 
+            license_no = '{license_no}'
+    """
+    )
+
+    professional_record = cursor.fetchall()
+    conn.close()
+
+    return professional_record
+
+def ready_receipt(license_no, receipt_no):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    table_name = get_table_name(cursor, license_no)
+
+    cursor.execute(f"""
+        SELECT * 
+        FROM '{table_name}' 
+        WHERE 
+            receipt_no = '{receipt_no}'
+    """
+    )
+
+    receipt_record = cursor.fetchall()
+    conn.close()
+
+    return receipt_record
