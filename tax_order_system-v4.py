@@ -446,12 +446,18 @@ class MainWindow(tk.Frame):
         elif self.check_amount():
             messagebox.showerror(
                 "Receipt Addition Error", 
-                "Error! You have too many zeroes in the amount."
+                "Error! You have too many decimal points in the amount."
             )
         else: 
             if not check_receipt_no(license_no, receipt_no):
-                add_receipt(license_no, receipt_no, type_of_payment, receipt_date, 
-                            amount, verified_by)
+                # rows = self.trv_receipt.get_children()
+                # self.trv_receipt.selection_set(rows[-1])
+                # self.trv_receipt.focus_force()
+                # last_row = self.trv_receipt.selection()
+                # old_date = self.trv_receipt.item(last_row, "values")[2]
+
+                add_receipt(license_no, receipt_no, type_of_payment, 
+                            receipt_date, amount, verified_by)
 
                 messagebox.showinfo("Record Addition Successful", 
                                     "Done! Receipt has been added.")

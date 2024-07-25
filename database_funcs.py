@@ -1,5 +1,6 @@
 from datetime import datetime
 import sqlite3
+import time
 
 DATABASE_FILE = "professional_tax_order_records.db"
 
@@ -212,19 +213,24 @@ def add_receipt(license_no, receipt_no, type_of_payment, receipt_date, amount,
     cursor = conn.cursor()
     table_name = get_table_name(cursor, license_no)
 
-    year = datetime.now().strftime("%y")
-    date1 = datetime.strptime(receipt_date, "%m/%d/%y")
-    date2 = datetime.strptime(f"01/31/{year}", "%m/%d/%y")
+    cur_date = time.mktime(datetime.strptime(receipt_date, "%m/%d/%y").timetuple())
+    cur_date = datetime.fromtimestamp(cur_date)
+    cur_month = str(cur_date.month)
+    cur_day = str(cur_date.day)
+    cur_year = str(cur_date.year)
+    receipt_date = cur_month + "/" + cur_day + "/" + cur_year
+
+    date1 = datetime.strptime(f"{cur_day}/{cur_month}", "%d/%m")
+    date2 = datetime.strptime(f"31/1", "%d/%m")
 
     checking = detect_newness(license_no)
-    amount = float(amount)
     penalty = "None"
+    amount = float(amount)
     total_amount = float(amount)
 
-    if checking:
-        if date1 > date2:
-            penalty = amount * 0.30 
-            total_amount = amount + penalty
+    if checking and date1 > date2:
+        penalty = amount * 0.30 
+        total_amount = amount + penalty
 
         cursor.execute(f"""
             INSERT INTO '{table_name}' (
@@ -271,19 +277,24 @@ def edit_receipt(license_no, old_receipt_no, new_receipt_no, type_of_payment,
     cursor = conn.cursor()
     table_name = get_table_name(cursor, license_no)
 
-    year = datetime.now().strftime("%y")
-    date1 = datetime.strptime(receipt_date, "%m/%d/%y")
-    date2 = datetime.strptime(f"01/31/{year}", "%m/%d/%y")
+    cur_date = time.mktime(datetime.strptime(receipt_date, "%m/%d/%y").timetuple())
+    cur_date = datetime.fromtimestamp(cur_date)
+    cur_month = str(cur_date.month)
+    cur_day = str(cur_date.day)
+    cur_year = str(cur_date.year)
+    receipt_date = cur_month + "/" + cur_day + "/" + cur_year
+
+    date1 = datetime.strptime(f"{cur_day}/{cur_month}", "%d/%m")
+    date2 = datetime.strptime(f"31/1", "%d/%m")
 
     checking = detect_newness(license_no)
     penalty = "None"
+    amount = float(amount)
     total_amount = float(amount)
 
-    if checking:
-        if date1 > date2:
-            amount = float(amount)
-            penalty = amount * 0.30 
-            total_amount = amount + penalty
+    if checking and date1 > date2:
+        penalty = amount * 0.30 
+        total_amount = amount + penalty
 
         cursor.execute(f"""
             UPDATE '{table_name}' 
