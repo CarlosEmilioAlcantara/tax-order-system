@@ -6,10 +6,13 @@ sys.path.append(os.path.join(sys.path[0]))
 
 from create_directories import create_directory
 
-pdf = FPDF("P", "mm", "A5")
-pdf.add_page()
+def create_pdf():
+    pdf = FPDF("P", "mm", "A5")
+    pdf.add_page()
 
-def create_header():
+    return pdf
+
+def create_header(pdf):
     pdf.set_font('Times', '', 8)
     pdf.cell(40, 10, '', align='C')
     pdf.cell(40, 10, 'REPUBLIKA NG PILIPINAS', align='C')
@@ -26,7 +29,7 @@ def create_header():
     pdf.cell(40, 10, '', align='C')
     pdf.cell(40, 10, 'Business Tax Division', align='C')
 
-def create_body_top(last_name, date, first_name, middle_name):
+def create_body_top(pdf, last_name, date, first_name, middle_name):
     pdf.ln(15)
     pdf.set_font('Arial', 'B', 12)
     pdf.cell(40, 10, '', align='C')
@@ -40,7 +43,7 @@ def create_body_top(last_name, date, first_name, middle_name):
     pdf.ln(5)
     pdf.cell(40, 10, f'MIDDLE NAME: {middle_name}')
 
-def create_body_bottom(address, profession, license_no, type_of_payment,
+def create_body_bottom(pdf, address, profession, license_no, type_of_payment,
                        amount, penalty, receipt_no, verified_by):
     pdf.ln(15)
     pdf.set_font('Arial', '', 10)
@@ -61,14 +64,15 @@ def create_body_bottom(address, profession, license_no, type_of_payment,
     pdf.cell(40, 10, f'VERIFIED BY: {verified_by}', 0, 0, align="R")
 
 def print_receipt(professional_record, receipt_record):
-    create_header()
+    pdf = create_pdf()
+    create_header(pdf)
 
     last_name = professional_record[0][1]
     first_name = professional_record[0][2]
     middle_name = professional_record[0][3]
     date = receipt_record[0][3]
 
-    create_body_top(last_name, date, first_name, middle_name)
+    create_body_top(pdf, last_name, date, first_name, middle_name)
 
     address = professional_record[0][4]
     profession = professional_record[0][5]
@@ -80,7 +84,7 @@ def print_receipt(professional_record, receipt_record):
     receipt_no = receipt_record[0][1]
     verified_by = receipt_record[0][7]
 
-    create_body_bottom(address, profession, license_no, type_of_payment, amount, 
+    create_body_bottom(pdf, address, profession, license_no, type_of_payment, amount, 
                     penalty, receipt_no, verified_by)
 
     create_directory(license_no, last_name)

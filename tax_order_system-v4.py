@@ -8,12 +8,15 @@ import sys
 import os
 sys.path.append(os.path.join(sys.path[0]))
 
+from regex import check_na
+
 from database_funcs import initialize_database, get_license_numbers, \
                             search_license_numbers, add_record, open_record, \
                             edit_record, delete_record, get_receipts, \
                             add_receipt, detect_newness, delete_receipt, \
                             check_license_no, check_receipt_no, edit_receipt, \
-                            search_receipts, ready_receipt, ready_professional
+                            search_receipts, ready_receipt, ready_professional, \
+                            check_na_iteration
 
 from print_receipt import print_receipt
 
@@ -86,9 +89,9 @@ class Sidebar(tk.Frame):
         self.scrl_treeview_y.pack(side="right", fill="y")
 
         self.trv_license = ttk.Treeview(self.frm_treeview,
-                                       columns="license_numbers",
-                                       xscrollcommand=self.scrl_treeview_x,
-                                       yscrollcommand=self.scrl_treeview_y,
+                                       columns=("license_numbers"),
+                                       xscrollcommand=self.scrl_treeview_x.set,
+                                       yscrollcommand=self.scrl_treeview_y.set,
                                        selectmode="extended")
 
         self.scrl_treeview_x.config(command=self.trv_license.xview)
@@ -98,8 +101,8 @@ class Sidebar(tk.Frame):
         self.trv_license.column("#0", width=0, stretch=tk.NO)
 
         self.trv_license.heading("license_numbers", text="License Numbers")
-        self.trv_license.column("license_numbers", width=150,
-                               anchor="center", stretch=tk.YES)
+        self.trv_license.column("license_numbers", minwidth=150,
+                               anchor="center", stretch=tk.NO)
             
         self.trv_license.tag_configure("oddrow", foreground=BLUE)
         self.trv_license.tag_configure("evenrow", foreground=BLACK)
@@ -274,7 +277,7 @@ class MainWindow(tk.Frame):
         profession = self.ent_profession.get()
 
 
-        if (len(license_no) == 0 or len(last_name) == 0 or 
+        if (license_no == "LICENSE" or len(last_name) == 0 or 
             len(first_name) == 0 or len(middle_name) == 0 or
             len(address) == 0 or len(profession) == 0):
 
@@ -579,8 +582,8 @@ class MainWindow(tk.Frame):
                                        columns=("receipt_no", "type_of_payment",
                                                 "date", "amount", "penalty",
                                                 "total_amount", "verified_by"),
-                                       xscrollcommand=self.scrl_treeview_x,
-                                       yscrollcommand=self.scrl_treeview_y,
+                                       xscrollcommand=self.scrl_treeview_x.set,
+                                       yscrollcommand=self.scrl_treeview_y.set,
                                        selectmode="extended")
         
         self.scrl_treeview_y.config(command=self.trv_receipt.yview)
@@ -756,9 +759,19 @@ class AddRecordWindow(tk.Toplevel):
 
         lbl_license = tk.Label(self.frm_add_right, text="License No:")
         lbl_license.pack(anchor="w")
-
+        
         self.ent_license = tk.Entry(self.frm_add_right, width=30)
         self.ent_license.pack(anchor="w", ipady=3)
+
+        lbl_availability = tk.Label(self.frm_add_right, text="No License Number:")
+        lbl_availability.pack(anchor="w")
+
+        self.availability = tk.StringVar()
+        self.availability.set("Yes")
+        self.rdb_availability = tk.Radiobutton(self.frm_add_right, text="NA",
+                                                variable=self.availability,
+                                                value="NA")
+        self.rdb_availability.pack(side="left")
 
         self.frm_add_left.pack(side="left", padx=6)
         self.frm_add_right.pack(side="right", padx=6)
@@ -781,19 +794,47 @@ class AddRecordWindow(tk.Toplevel):
         middle_name = self.ent_middle_name.get()
         address = self.ent_address.get()
         profession = self.ent_profession.get()
+        availability = self.availability.get()
 
-        if (len(license_no) == 0 or len(last_name) == 0 or 
-            len(first_name) == 0 or len(middle_name) == 0 or
-            len(address) == 0 or len(profession) == 0):
+        if (len(last_name) == 0 or len(first_name) == 0 or
+            len(middle_name) == 0 or len(address) == 0 or
+            len(profession) == 0):
 
             messagebox.showerror(
                 "Record Addition Error", 
                 "Error! Have you inputted all/the proper values?"
             )
-        else:
+        elif (len(license_no) == 0 and availability == "Yes"):
+            
+            messagebox.showerror(
+                "Record Addition Error", 
+                "Error! If there is no license number, "
+                "please check the no license number button"
+            )
+        elif (len(license_no) == 0 and availability == "NA"):
+            license_no = availability + "_" + last_name + "_" + first_name + \
+                         "_" + middle_name
+        
+        if license_no:
             checking = check_license_no(license_no)
+            match = check_na(license_no)
 
             if not checking:
+                add_record(license_no, last_name, first_name, middle_name, address,
+                        profession)
+       
+                self.master.sidebar.load_license_numbers()
+
+                messagebox.showinfo(
+                    "Record Addition Successful", 
+                    "Done! Professional's records have been added."
+                )
+
+                self.destroy()
+            elif checking and match:
+                count = check_na_iteration(license_no)
+                license_no = license_no + "_" + str(count)
+
                 add_record(license_no, last_name, first_name, middle_name, address,
                         profession)
        

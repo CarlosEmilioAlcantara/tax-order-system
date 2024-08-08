@@ -54,6 +54,26 @@ def check_license_no(license_no):
 
     return checking
 
+def check_na_iteration(license_no):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+
+    cursor.execute(f"""
+        SELECT 
+            COUNT(license_no)
+        FROM professionals
+        WHERE license_no
+            LIKE '%{license_no}%'
+    """
+    )
+
+    result = cursor.fetchone()
+    count = result[0] + 1
+
+    conn.close()
+
+    return count
+
 def check_receipt_no(license_no, receipt_no):
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
@@ -229,7 +249,7 @@ def add_receipt(license_no, receipt_no, type_of_payment, receipt_date, amount,
     total_amount = float(amount)
 
     if checking and date1 > date2:
-        penalty = amount * 0.30 
+        penalty = amount * 0.25 
         total_amount = amount + penalty
 
         cursor.execute(f"""
@@ -293,7 +313,7 @@ def edit_receipt(license_no, old_receipt_no, new_receipt_no, type_of_payment,
     total_amount = float(amount)
 
     if checking and date1 > date2:
-        penalty = amount * 0.30 
+        penalty = amount * 0.25 
         total_amount = amount + penalty
 
         cursor.execute(f"""
