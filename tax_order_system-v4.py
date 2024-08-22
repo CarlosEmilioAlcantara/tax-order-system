@@ -11,12 +11,12 @@ sys.path.append(os.path.join(sys.path[0]))
 from regex import check_na
 
 from database_funcs import initialize_database, get_license_numbers, \
-                            search_license_numbers, add_record, open_record, \
-                            edit_record, delete_record, get_receipts, \
-                            add_receipt, detect_newness, delete_receipt, \
-                            check_license_no, check_receipt_no, edit_receipt, \
-                            search_receipts, ready_receipt, ready_professional, \
-                            check_na_iteration
+    search_license_numbers, add_record, open_record, \
+    edit_record, delete_record, get_receipts, \
+    add_receipt, detect_newness, delete_receipt, \
+    check_license_no, check_receipt_no, edit_receipt, \
+    search_receipts, ready_receipt, ready_professional, \
+    check_na_iteration
 
 from print_receipt import print_receipt
 
@@ -61,9 +61,10 @@ class Sidebar(tk.Frame):
 
     def create_add(self):
         self.btn_add = tk.Button(self, text="Add Record", bg=PRIMARY,
-                                      activebackground=PRIMARY, fg=WHITE,
-                                      activeforeground=WHITE, font=("24"),
-                                      command=self.open_add_record_window)
+            activebackground=PRIMARY, fg=WHITE,
+            activeforeground=WHITE, font=("24"),
+            command=self.open_add_record_window
+        )
 
         self.btn_add.pack(padx=10, pady=10)
 
@@ -89,10 +90,11 @@ class Sidebar(tk.Frame):
         self.scrl_treeview_y.pack(side="right", fill="y")
 
         self.trv_license = ttk.Treeview(self.frm_treeview,
-                                       columns=("license_numbers"),
-                                       xscrollcommand=self.scrl_treeview_x.set,
-                                       yscrollcommand=self.scrl_treeview_y.set,
-                                       selectmode="extended")
+            columns=("license_numbers"),
+            xscrollcommand=self.scrl_treeview_x.set,
+            yscrollcommand=self.scrl_treeview_y.set,
+            selectmode="extended"
+        )
 
         self.scrl_treeview_x.config(command=self.trv_license.xview)
         self.scrl_treeview_y.config(command=self.trv_license.yview)
@@ -163,13 +165,16 @@ class Sidebar(tk.Frame):
         self.master.mainwindow.ent_middle_name.delete(0, "end")
         self.master.mainwindow.ent_address.delete(0, "end")
         self.master.mainwindow.ent_profession.delete(0, "end")
+        self.master.mainwindow.ent_license_no.delete(0, "end")        
 
-        self.master.mainwindow.ent_last_name.insert(0, record[0][1])
-        self.master.mainwindow.ent_first_name.insert(0, record[0][2])
-        self.master.mainwindow.ent_middle_name.insert(0, record[0][3])
-        self.master.mainwindow.ent_address.insert(0, record[0][4])
-        self.master.mainwindow.ent_profession.insert(0, record[0][5])
-        self.master.mainwindow.lbl_license_no.config(text=record[0][0])
+        self.master.mainwindow.ent_last_name.insert(0, record[0][2])
+        self.master.mainwindow.ent_first_name.insert(0, record[0][3])
+        self.master.mainwindow.ent_middle_name.insert(0, record[0][4])
+        self.master.mainwindow.ent_address.insert(0, record[0][5])
+        self.master.mainwindow.ent_profession.insert(0, record[0][6])
+        self.master.mainwindow.lbl_prof_id.config(text = record[0][0])
+        self.master.mainwindow.lbl_current_license.config(text = record[0][1])
+        self.master.mainwindow.ent_license_no.insert(0, record[0][1])
 
         self.master.mainwindow.ent_receipt_no.delete(0, "end")
         self.master.mainwindow.ent_amount.delete(0, "end")
@@ -188,7 +193,6 @@ class MainWindow(tk.Frame):
     def mainwindow_container(self):
         self.frm_center = tk.Frame(self)
         self.mainwindow_top(self.frm_center)
-        # self.mainwindow_bottom(self.frm_center)
         self.frm_center.pack(side="top")
 
     def mainwindow_top(self, container):
@@ -235,21 +239,35 @@ class MainWindow(tk.Frame):
         self.ent_profession = tk.Entry(self.frm_professional_middle, width=30)
         self.ent_profession.pack(anchor="w", ipady=3, pady=(0, 5))
 
+        self.lbl_prof_id = tk.Label(self.frm_professional_middle, 
+                               text="PROFESSIONAL ID",
+                               fg="#d9d9d9")
+        self.lbl_prof_id.pack(anchor="w")
+
         lbl_license = tk.Label(self.frm_professional_middle, 
                                text="License Number:")
         lbl_license.pack(anchor="w")
-        self.lbl_license_no = tk.Label(self.frm_professional_middle, 
-                                       text="LICENSE")
-        self.lbl_license_no.pack(anchor="w")
+
+        self.lbl_current_license = tk.Label(self.frm_professional_middle, 
+                               text="CURRENT LICENSE NUMBER")
+        self.lbl_current_license.pack(anchor="w")
+
+        lbl_new_license = tk.Label(self.frm_professional_middle, 
+                               text="New License Number:")
+        lbl_new_license.pack(anchor="w")
+
+        self.ent_license_no = tk.Entry(self.frm_professional_middle, width=30)
+        self.ent_license_no.pack(anchor="w", ipady=3, pady=(0, 5))
 
         self.btn_edit_professional = tk.Button(self.frm_professional_right,
-                                               text="Edit Professional",
-                                               font=("24"),
-                                               background=CYAN,
-                                               activebackground=CYAN,
-                                               foreground=WHITE,
-                                               activeforeground=WHITE,
-                                               command=self.handle_edit_record)
+            text="Edit Professional",
+            font=("24"),
+            background=CYAN,
+            activebackground=CYAN,
+            foreground=WHITE,
+            activeforeground=WHITE,
+            command=self.handle_edit_record
+        )
         self.btn_edit_professional.pack(padx=10, pady=10)
 
         self.btn_delete_professional = tk.Button(self.frm_professional_right,
@@ -268,7 +286,9 @@ class MainWindow(tk.Frame):
         self.frm_professional.pack(ipadx=10, ipady=10, pady=10)
 
     def handle_edit_record(self):
-        license_no = self.lbl_license_no.cget("text")    
+        professional_id = self.lbl_prof_id.cget("text")
+        cur_license_no = self.lbl_current_license.cget("text")
+        new_license_no = self.ent_license_no.get()    
 
         last_name = self.ent_last_name.get()
         first_name = self.ent_first_name.get()
@@ -276,8 +296,9 @@ class MainWindow(tk.Frame):
         address = self.ent_address.get()
         profession = self.ent_profession.get()
 
-
-        if (license_no == "LICENSE" or len(last_name) == 0 or 
+        if (professional_id == "PPROFESSIONAL ID" or
+            cur_license_no == "CURRENT LICENSE NUMBER" or 
+            len(new_license_no) == 0 or len(last_name) == 0 or 
             len(first_name) == 0 or len(middle_name) == 0 or
             len(address) == 0 or len(profession) == 0):
 
@@ -286,16 +307,21 @@ class MainWindow(tk.Frame):
                 "Error! Have you inputted all/the proper values?"
             )
         else:
-            edit_record(license_no, last_name, first_name, middle_name, 
-                        address, profession)
+            edit_record(professional_id, cur_license_no, new_license_no, 
+                        last_name, first_name, middle_name, address, profession)
 
+            self.lbl_current_license.config(text = new_license_no)
             messagebox.showinfo("Record Editing Successful", 
                                 "Done! Records have been edited.")
+            
+            self.master.sidebar.load_license_numbers()          
+            self.handle_detect_newness(new_license_no)
+            self.load_receipts(new_license_no)              
 
     def handle_delete_record(self):
-        license_no = self.lbl_license_no.cget("text")    
+        license_no = self.ent_license_no.get()    
 
-        if license_no == "LICENSE":
+        if len(license_no) == 0:
             messagebox.showerror("Record Deletion Error",
                                 "Error! Please pick a record first.")
         else:
@@ -311,7 +337,7 @@ class MainWindow(tk.Frame):
                 self.ent_middle_name.delete(0, "end")
                 self.ent_address.delete(0, "end")
                 self.ent_profession.delete(0, "end")
-                self.lbl_license_no.config(text="LICENSE")
+                self.ent_license_no.delete(0, "end")
 
                 messagebox.showinfo("Record Deletion Successful",
                                     "Done! Records have been deleted.")
@@ -339,7 +365,8 @@ class MainWindow(tk.Frame):
         self.cal_date = Calendar(self.frm_receipt_left, selectmode="day",
                                  year=int(today.strftime("%Y")),
                                  month=int(today.strftime("%m")),
-                                 day=int(today.strftime("%d")))
+                                 day=int(today.strftime("%d")),
+                                 date_pattern='MM/dd/yyyy')
         self.cal_date.pack()
 
         lbl_receipt_no = tk.Label(self.frm_receipt_middle, 
@@ -430,7 +457,7 @@ class MainWindow(tk.Frame):
         self.frm_receipt.pack(ipadx=10, ipady=10, pady=(0, 10))
 
     def handle_add_receipt(self):
-        license_no = self.lbl_license_no.cget("text")    
+        license_no = self.lbl_current_license.cget("text")    
 
         receipt_no = self.ent_receipt_no.get()
         type_of_payment = self.payment.get()
@@ -438,9 +465,10 @@ class MainWindow(tk.Frame):
         amount = self.ent_amount.get()
         verified_by = self.ent_verified.get()
 
-        if (len(license_no) == 0 or len(receipt_no) == 0 or 
-            type_of_payment == "None" or len(receipt_date) == 0 or
-            len(amount) == 0 or len(verified_by) == 0):
+        if (license_no == "CURRENT LICENSE NUMBER" or 
+            len(receipt_no) == 0 or type_of_payment == "None" 
+            or len(receipt_date) == 0 or len(amount) == 0 or 
+            len(verified_by) == 0):
 
             messagebox.showerror(
                 "Receipt Addition Error", 
@@ -453,11 +481,6 @@ class MainWindow(tk.Frame):
             )
         else: 
             if not check_receipt_no(license_no, receipt_no):
-                # rows = self.trv_receipt.get_children()
-                # self.trv_receipt.selection_set(rows[-1])
-                # self.trv_receipt.focus_force()
-                # last_row = self.trv_receipt.selection()
-                # old_date = self.trv_receipt.item(last_row, "values")[2]
 
                 add_receipt(license_no, receipt_no, type_of_payment, 
                             receipt_date, amount, verified_by)
@@ -474,7 +497,7 @@ class MainWindow(tk.Frame):
                 )
 
     def handle_delete_receipt(self):
-        license_no = self.lbl_license_no.cget("text")    
+        license_no = self.lbl_current_license.cget("text") 
         selected = self.trv_receipt.selection()
         to_delete = [] 
         answer = False
@@ -501,7 +524,7 @@ class MainWindow(tk.Frame):
             self.load_receipts(license_no)
 
     def handle_edit_receipt(self):
-        license_no = self.lbl_license_no.cget("text")    
+        license_no = self.lbl_current_license.cget("text")
         selected = self.trv_receipt.selection()
         new_receipt_no = self.ent_receipt_no.get()
         type_of_payment = self.payment.get()
@@ -530,22 +553,22 @@ class MainWindow(tk.Frame):
                                         "professional's receipt record/s?")
 
         if answer:
-            if not check_receipt_no(license_no, new_receipt_no):
-                old_receipt_no = self.trv_receipt.item(selected, "values")[0]
+            # if not check_receipt_no(license_no, new_receipt_no):
+            old_receipt_no = self.trv_receipt.item(selected, "values")[0]
 
-                edit_receipt(license_no, old_receipt_no, new_receipt_no, 
-                            type_of_payment, receipt_date, amount, verified_by)
+            edit_receipt(license_no, old_receipt_no, new_receipt_no, 
+                        type_of_payment, receipt_date, amount, verified_by)
 
-                messagebox.showinfo("Receipt Editing Successful",
-                                    "Done! Receipt record has been edited.")
+            messagebox.showinfo("Receipt Editing Successful",
+                                "Done! Receipt record has been edited.")
 
-                self.handle_detect_newness(license_no)
-                self.load_receipts(license_no)
-            else:
-                messagebox.showerror(
-                    "Receipt Editing Error", 
-                    "Error! Receipt already recorded."
-                )
+            self.handle_detect_newness(license_no)
+            self.load_receipts(license_no)
+        else:
+            messagebox.showerror(
+                "Receipt Editing Error", 
+                "Error! Receipt already recorded."
+            )
 
     def check_amount(self):
         characters = self.ent_amount.get()
@@ -639,7 +662,7 @@ class MainWindow(tk.Frame):
         self.btn_print.pack(anchor="w", side="top", pady=2)
 
     def handle_print_receipt(self):
-        license_no = self.lbl_license_no.cget("text")
+        license_no = self.ent_license_no.get()
         selected = self.trv_receipt.selection()
         to_print = []
 
@@ -689,7 +712,7 @@ class MainWindow(tk.Frame):
                                         iid=i, tags=("oddrow",))
 
     def handle_search_receipt(self, e):
-        license_no = self.lbl_license_no.cget("text")    
+        license_no = self.ent_license_no.get()    
         search_term = self.ent_search.get() 
 
         results = search_receipts(license_no, search_term)

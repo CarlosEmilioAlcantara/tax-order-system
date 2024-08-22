@@ -11,6 +11,7 @@ def initialize_database():
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS professionals(
+                professional_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 license_no TEXT,
                 last_name TEXT,
                 first_name TEXT,
@@ -36,6 +37,11 @@ def get_table_name(cursor, license_no):
     table_name = license_no + "_" + last_name
 
     return table_name
+
+def create_table_name(new_license_no, last_name):
+    new_table_name = new_license_no + "_" + last_name
+
+    return new_table_name
 
 def check_license_no(license_no):
     conn = sqlite3.connect(DATABASE_FILE)
@@ -150,6 +156,12 @@ def add_record(license_no, last_name, first_name, middle_name, address,
     conn.commit()
     conn.close()
 
+def change_table_name():
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+
+    
+
 def open_record(license_no):
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
@@ -163,17 +175,30 @@ def open_record(license_no):
 
     return record
 
-def edit_record(license_no, last_name, first_name, middle_name, address, 
-                profession):
-
+def edit_record(professional_id, cur_license_no, new_license_no, last_name, 
+                first_name, middle_name, address, profession):
+    
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
+    old_table_name = get_table_name(cursor, cur_license_no)
+    new_table_name = create_table_name(new_license_no, last_name)
+
+    try:
+        cursor.execute(f"""
+            ALTER TABLE '{old_table_name}'
+                RENAME TO '{new_table_name}';
+        """)
+    except sqlite3.Error as e:
+        pass
+
+    conn.commit()
 
     cursor.execute("""
-        UPDATE professionals SET last_name = ?, first_name = ?, middle_name = ?,
-                   address = ?, profession = ?
-        WHERE license_no = ?
-    """, (last_name, first_name, middle_name, address, profession, license_no))
+        UPDATE professionals SET license_no = ?, last_name = ?, first_name = ?, 
+                   middle_name = ?, address = ?, profession = ?
+        WHERE professional_id = ?
+    """, (new_license_no, last_name, first_name, middle_name, address, profession,
+          professional_id))
 
     record = cursor.fetchall()
 
@@ -233,15 +258,11 @@ def add_receipt(license_no, receipt_no, type_of_payment, receipt_date, amount,
     cursor = conn.cursor()
     table_name = get_table_name(cursor, license_no)
 
-    cur_date = time.mktime(datetime.strptime(receipt_date, "%m/%d/%y").timetuple())
-    cur_date = datetime.fromtimestamp(cur_date)
-    cur_month = str(cur_date.month)
-    cur_day = str(cur_date.day)
-    cur_year = str(cur_date.year)
-    receipt_date = cur_month + "/" + cur_day + "/" + cur_year
+    date_arr = receipt_date.split('/')
+    date1 = datetime(int(date_arr[2]), int(date_arr[0]), int(date_arr[1]))
 
-    date1 = datetime.strptime(f"{cur_day}/{cur_month}", "%d/%m")
-    date2 = datetime.strptime(f"31/1", "%d/%m")
+    cur_year = str(date1.year)
+    date2 = datetime.strptime(f"31/1/{cur_year}", "%d/%m/%Y")
 
     checking = detect_newness(license_no)
     penalty = "None"
@@ -297,15 +318,11 @@ def edit_receipt(license_no, old_receipt_no, new_receipt_no, type_of_payment,
     cursor = conn.cursor()
     table_name = get_table_name(cursor, license_no)
 
-    cur_date = time.mktime(datetime.strptime(receipt_date, "%m/%d/%y").timetuple())
-    cur_date = datetime.fromtimestamp(cur_date)
-    cur_month = str(cur_date.month)
-    cur_day = str(cur_date.day)
-    cur_year = str(cur_date.year)
-    receipt_date = cur_month + "/" + cur_day + "/" + cur_year
+    date_arr = receipt_date.split('/')
+    date1 = datetime(int(date_arr[2]), int(date_arr[0]), int(date_arr[1]))
 
-    date1 = datetime.strptime(f"{cur_day}/{cur_month}", "%d/%m")
-    date2 = datetime.strptime(f"31/1", "%d/%m")
+    cur_year = str(date1.year)
+    date2 = datetime.strptime(f"31/1/{cur_year}", "%d/%m/%Y")
 
     checking = detect_newness(license_no)
     penalty = "None"

@@ -67,16 +67,16 @@ def print_receipt(professional_record, receipt_record):
     pdf = create_pdf()
     create_header(pdf)
 
-    last_name = professional_record[0][1]
-    first_name = professional_record[0][2]
-    middle_name = professional_record[0][3]
+    last_name = professional_record[0][2]
+    first_name = professional_record[0][3]
+    middle_name = professional_record[0][4]
     date = receipt_record[0][3]
 
     create_body_top(pdf, last_name, date, first_name, middle_name)
 
-    address = professional_record[0][4]
-    profession = professional_record[0][5]
-    license_no = professional_record[0][0]
+    address = professional_record[0][5]
+    profession = professional_record[0][6]
+    license_no = professional_record[0][1]
 
     type_of_payment = receipt_record[0][2]
     amount = receipt_record[0][4]
