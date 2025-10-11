@@ -36,13 +36,13 @@ A **tax order system** for recording the tax orders of professionals in the city
    cd tax-order-system
 
 2. **Create a virtual environment and install dependencies**
+
    Linux
    ```bash
    mkdir venv
    python3 -m venv venv 
    source venv/bin/activate
    pip install -r requirements.txt
-   ```
  
    Windows
    ```bash
