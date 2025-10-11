@@ -34,6 +34,7 @@ A **tax order system** for recording the tax orders of professionals in the city
    ```bash                                                                                                            
    git clone https://github.com/CarlosEmilioAlcantara/tax-order-system.git
    cd tax-order-system
+   ```
 
 2. **Create a virtual environment and install dependencies**
 
@@ -43,7 +44,7 @@ A **tax order system** for recording the tax orders of professionals in the city
    python3 -m venv venv 
    source venv/bin/activate
    pip install -r requirements.txt
- 
+   ``` 
 
    Windows
    ```bash
@@ -51,13 +52,16 @@ A **tax order system** for recording the tax orders of professionals in the city
    python -m venv venv 
    .\venv\Scripts\activate
    pip install -r requirements.txt
+   ```
  
 3. **Run the app**                                                                                                    
 
    Linux
    ```bash
    python3 tax_order_system-v4.py
+   ```
 
    Windows
    ```bash
    python tax_order_system-v4.py
+   ```
