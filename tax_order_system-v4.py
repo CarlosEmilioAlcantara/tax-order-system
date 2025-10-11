@@ -878,8 +878,6 @@ class AddRecordWindow(tk.Toplevel):
 class TaxOrderSystem(tk.Tk):
     def __init__(self):
         super().__init__()
-        # self.state("zoomed")
-        # self.resizable(0, 0)
         self.config()
         self.geometry("1100x900+50+50")
 
