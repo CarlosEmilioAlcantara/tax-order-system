@@ -44,6 +44,7 @@ A **tax order system** for recording the tax orders of professionals in the city
    source venv/bin/activate
    pip install -r requirements.txt
  
+
    Windows
    ```bash
    mkdir venv
@@ -52,6 +53,7 @@ A **tax order system** for recording the tax orders of professionals in the city
    pip install -r requirements.txt
  
 3. **Run the app**                                                                                                    
+
    Linux
    ```bash
    python3 tax_order_system-v4.py
